@@ -5,6 +5,86 @@
 #include <QStandardPaths>
 #include <QDebug>
 
+// ------------------- DesktopEntryModel -------------------
+int DesktopEntryModel::rowCount(const QModelIndex &parent) const {
+    if (parent.isValid()) return 0;
+    return m_entries.size();
+}
+
+QVariant DesktopEntryModel::data(const QModelIndex &index, int role) const {
+    if (!index.isValid() || index.row() >= m_entries.size())
+        return QVariant();
+
+    const QVariantMap &entry = m_entries.at(index.row());
+    switch (role) {
+    case NameRole: return entry.value("Desktop Entry/Name");
+    case ExecRole: return entry.value("Desktop Entry/Exec");
+    case IconRole: return entry.value("Desktop Entry/Icon");
+    case GenericRole: return entry;
+    default: return QVariant();
+    }
+}
+
+QHash<int, QByteArray> DesktopEntryModel::roleNames() const {
+    return {
+        {NameRole, "name"},
+        {ExecRole, "exec"},
+        {IconRole, "icon"},
+        {GenericRole, "entry"}
+    };
+}
+
+void DesktopEntryModel::setEntries(const QList<QVariantMap> &entries) {
+    beginResetModel();
+    m_entries = entries;
+    endResetModel();
+}
+
+// ------------------- AppFilterProxyModel -------------------
+AppFilterProxyModel::AppFilterProxyModel(QObject *parent)
+    : QSortFilterProxyModel(parent) 
+{
+    // Enable sorting support if you decide to sort alphabetically later
+    setSortCaseSensitivity(Qt::CaseInsensitive); 
+}
+
+void AppFilterProxyModel::setFavoriteKeys(const QStringList &keys) {
+    if (m_favoriteKeys != keys) {
+        m_favoriteKeys = keys;
+        emit favoriteKeysChanged();
+        invalidateFilter(); // Tells Qt to instantly re-run filtering rules
+    }
+}
+
+void AppFilterProxyModel::setSearchQuery(const QString &query) {
+    if (m_searchQuery != query) {
+        m_searchQuery = query;
+        emit searchQueryChanged();
+        invalidateFilter(); // Tells Qt to instantly re-run filtering rules
+    }
+}
+
+bool AppFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const {
+    // 1. Get access to the item data using the exact Source Model roles
+    QModelIndex sourceIndex = sourceModel()->index(source_row, 0, source_parent);
+    QString appName = sourceModel()->data(sourceIndex, DesktopEntryModel::NameRole).toString();
+
+    // 2. Apply Favorites rule if the list isn't empty
+    if (!m_favoriteKeys.isEmpty() && !m_favoriteKeys.contains(appName)) {
+        return false;
+    }
+
+    // 3. Apply Case-Insensitive String Filter matching rule
+    if (!m_searchQuery.trimmed().isEmpty()) {
+        QString cleanQuery = m_searchQuery.trimmed();
+        if (!appName.contains(cleanQuery, Qt::CaseInsensitive)) {
+            return false;
+        }
+    }
+
+    return true; // Item passed all active filter configurations!
+}
+
 // ------------------- CutieDesktopFileParser -------------------
 CutieDesktopFileParser::CutieDesktopFileParser(QObject *parent)
     : QObject(parent)
