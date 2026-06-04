@@ -5,6 +5,8 @@
 #include <QAbstractListModel>
 #include <QSortFilterProxyModel>
 #include <QVariantMap>
+#include <QQmlEngine>
+#include <QJSEngine>
 
 // ---- Top-level model class ---- 
 class DesktopEntryModel : public QAbstractListModel {
@@ -23,11 +25,11 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
-
     void setEntries(const QList<QVariantMap> &entries);
 
 private:
     QList<QVariantMap> m_entries;
+    Q_DISABLE_COPY(DesktopEntryModel)
 };
 
 // 2. The Optimized Proxy Model Layer
@@ -50,12 +52,12 @@ signals:
     void searchQueryChanged();
 
 protected:
-    // This internal Qt function optimizes item rejection/acceptance natively
     bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
 
 private:
     QStringList m_favoriteKeys;
     QString m_searchQuery;
+    Q_DISABLE_COPY(AppFilterProxyModel)
 };
 
 // 3. Main Parser Class
@@ -67,7 +69,11 @@ public:
 
     // Returns the clean master model
     Q_INVOKABLE DesktopEntryModel* fetchAllEntriesModel(const QStringList &paths = {}) const;
+    Q_INVOKABLE AppFilterProxyModel* createFilterModel(const QStringList &paths = {}) const;
 
     static CutieDesktopFileParser* instance();
     static QObject* provider(QQmlEngine *engine, QJSEngine *scriptEngine);
+
+private:
+    Q_DISABLE_COPY(CutieDesktopFileParser)
 };

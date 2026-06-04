@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QDebug>
+#include <QQmlEngine>
 
 // ------------------- DesktopEntryModel -------------------
 int DesktopEntryModel::rowCount(const QModelIndex &parent) const {
@@ -96,7 +97,8 @@ CutieDesktopFileParser::~CutieDesktopFileParser() {}
 
 // Returns a new DesktopEntryModel populated with entries from the given paths
 DesktopEntryModel* CutieDesktopFileParser::fetchAllEntriesModel(const QStringList &paths) const {
-    auto *model = new DesktopEntryModel(const_cast<CutieDesktopFileParser*>(this));
+    auto *model = new DesktopEntryModel();
+    QQmlEngine::setObjectOwnership(model, QQmlEngine::JavaScriptOwnership);
     QList<QVariantMap> entries;
 
     qDebug() << "module - CutieDesktopFileParser - fetchAllEntriesModel() : called";
@@ -131,6 +133,16 @@ DesktopEntryModel* CutieDesktopFileParser::fetchAllEntriesModel(const QStringLis
     qDebug() << "module - CutieDesktopFileParser - fetchAllEntriesModel() : number of entries found =" << entries.size();
     model->setEntries(entries);
     return model;
+}
+
+AppFilterProxyModel* CutieDesktopFileParser::createFilterModel(const QStringList &paths) const
+{
+    auto *base = fetchAllEntriesModel(paths);
+    auto *proxy = new AppFilterProxyModel();
+    QQmlEngine::setObjectOwnership(proxy, QQmlEngine::JavaScriptOwnership);
+    proxy->setSourceModel(base);
+    base->setParent(proxy);
+    return proxy;
 }
 
 // Singleton instance
