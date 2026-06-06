@@ -76,14 +76,11 @@ bool AppFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex &so
     }
 
     // 3. Apply Case-Insensitive String Filter matching rule
-    if (!m_searchQuery.trimmed().isEmpty()) {
-        QString cleanQuery = m_searchQuery.trimmed();
-        if (!appName.contains(cleanQuery, Qt::CaseInsensitive)) {
-            return false;
-        }
-    }
+    const QString cleanQuery = m_searchQuery.trimmed();
+    if (!cleanQuery.isEmpty() && !appName.contains(cleanQuery, Qt::CaseInsensitive))
+        return false;
 
-    return true; // Item passed all active filter configurations!
+    return true;
 }
 
 // ------------------- CutieDesktopFileParser -------------------
@@ -142,7 +139,6 @@ AppFilterProxyModel* CutieDesktopFileParser::createFilterModel(const QStringList
 
     proxy->setSourceModel(base);
 
-    // ONLY Qt ownership (no JS ownership)
     base->setParent(proxy);
 
     return proxy;
