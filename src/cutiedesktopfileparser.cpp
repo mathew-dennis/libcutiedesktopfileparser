@@ -43,10 +43,10 @@ void DesktopEntryModel::setEntries(const QList<QVariantMap> &entries) {
 
 // ------------------- AppFilterProxyModel -------------------
 AppFilterProxyModel::AppFilterProxyModel(QObject *parent)
-    : QSortFilterProxyModel(parent) 
+    : QSortFilterProxyModel(parent)
 {
     // Enable sorting support if you decide to sort alphabetically later
-    setSortCaseSensitivity(Qt::CaseInsensitive); 
+    setSortCaseSensitivity(Qt::CaseInsensitive);
 }
 
 void AppFilterProxyModel::setFavoriteKeys(const QStringList &keys) {
@@ -98,7 +98,7 @@ CutieDesktopFileParser::~CutieDesktopFileParser() {}
 // Returns a new DesktopEntryModel populated with entries from the given paths
 DesktopEntryModel* CutieDesktopFileParser::fetchAllEntriesModel(const QStringList &paths) const {
     auto *model = new DesktopEntryModel();
-    QQmlEngine::setObjectOwnership(model, QQmlEngine::JavaScriptOwnership);
+
     QList<QVariantMap> entries;
 
     qDebug() << "module - CutieDesktopFileParser - fetchAllEntriesModel() : called";
@@ -139,9 +139,12 @@ AppFilterProxyModel* CutieDesktopFileParser::createFilterModel(const QStringList
 {
     auto *base = fetchAllEntriesModel(paths);
     auto *proxy = new AppFilterProxyModel();
-    QQmlEngine::setObjectOwnership(proxy, QQmlEngine::JavaScriptOwnership);
+
     proxy->setSourceModel(base);
+
+    // ONLY Qt ownership (no JS ownership)
     base->setParent(proxy);
+
     return proxy;
 }
 
